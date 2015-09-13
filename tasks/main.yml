@@ -1,0 +1,44 @@
+- name: apt update
+  sudo: yes
+  apt: >
+    update_cache=yes
+    cache_valid_time=3600
+
+- name: install basic tools
+  sudo: yes
+  apt: >
+    pkg={{ item }}
+    state=latest
+  with_items:
+    - vim
+    - nano
+    - tree
+    - htop
+    - git
+    - build-essential
+
+- name: install ntp
+  sudo: yes
+  apt: >
+    pkg=ntp
+    state=latest
+
+- name: set locale
+  sudo: yes
+  command: /usr/sbin/update-locale LANG={{ locale }} LC_ALL={{ locale }}
+
+- name: set /etc/localtime
+  sudo: yes
+  copy: src=/usr/share/zoneinfo/{{ timezone }} 
+        dest=/etc/localtime
+        owner=root
+        group=root
+        mode=0644
+        backup=true
+
+- name: set /etc/timezone
+  sudo: yes
+  template: src=timezone.j2 dest=/etc/timezone
+  notify: update tzdata
+
+- include: setup_ufw.yml
