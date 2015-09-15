@@ -1,2 +1,23 @@
 - name: update tzdata
+  sudo: yes
   command: /usr/sbin/dpkg-reconfigure --frontend noninteractive tzdata
+  notify: restart rsyslog
+
+- name: restart fail2ban
+  sudo: yes
+  service: >
+    name=fail2ban
+    state=restarted
+
+- name: restart ssh
+  sudo: yes
+  service: >
+    name=ssh
+    state=restarted
+
+- name: restart rsyslog
+  sudo: yes
+  service: >
+    name=rsyslog
+    state=restarted
+

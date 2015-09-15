@@ -42,3 +42,72 @@
   notify: update tzdata
 
 - include: setup_ufw.yml
+
+- name: set root password
+  sudo: yes
+  user: >
+    name=root
+    password="{{ root_password | password_hash('sha512') }}"
+
+- name: add deploy user
+  sudo: yes
+  user: >
+    name={{ deploy_user_name }}
+    password="{{ deploy_user_password | password_hash('sha512') }}"
+    shell=/bin/bash
+
+- name: add public key for deploy user
+  sudo: yes
+  authorized_key: >
+    user={{ deploy_user_name }}
+    key="{{ lookup('file', item) }}"
+  with_items: deploy_user_public_keys
+
+- name: add deploy user to sudoers
+  sudo: yes
+  lineinfile: >
+    dest=/etc/sudoers
+    regexp="{{ deploy_user_name }} ALL"
+    line="{{ deploy_user_name }} ALL=(ALL) ALL"
+    state=present
+
+- name: install fail2ban
+  sudo: yes
+  apt: >
+    pkg=fail2ban
+    state=latest
+
+- name: configure fail2ban
+  sudo: yes
+  template: >
+    src=fail2ban.jail.d.sshd.conf.j2
+    dest=/etc/fail2ban/jail.d/sshd.conf
+  notify: restart fail2ban
+
+- name: set ssh port
+  sudo: yes
+  lineinfile: >
+    dest=/etc/ssh/sshd_config
+    regexp="^Port\s"
+    line="Port {{ ssh_port }}"
+    state=present
+  notify: restart ssh
+
+- name: disallow ssh password authentication
+  sudo: yes
+  lineinfile: >
+    dest=/etc/ssh/sshd_config
+    regexp="^PasswordAuthentication"
+    line="PasswordAuthentication no"
+    state=present
+  notify: restart ssh
+
+- name: disallow ssh root access
+  sudo: yes
+  lineinfile: >
+    dest=/etc/ssh/sshd_config
+    regexp="^PermitRootLogin"
+    line="PermitRootLogin no"
+    state=present
+  notify: restart ssh
+

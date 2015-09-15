@@ -7,7 +7,7 @@
   sudo: yes
   ufw: >
     proto=tcp
-    port=22
+    port={{ ssh_port }}
     rule=allow
 
 - name: set firewall default policy
